@@ -4,4 +4,5 @@ pip install -r requirements.txt
 
 # Do the required steps to setup the FYYUR database
 createdb fyyur
-# TODO: Add flask db upgrade step once exists
+createuser fyyur
+flask db upgrade
