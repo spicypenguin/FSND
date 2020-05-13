@@ -41,8 +41,10 @@ class Venue(db.Model):
     image_link = db.Column(db.String(500))
     facebook_link = db.Column(db.String(120))
     website_link = db.Column(db.String(120))
-    # TODO: genres
+    genres = db.Column(db.ARRAY(db.String(50)))
     # TODO: currently seeking talent
+
+    shows = db.relationship('Show', backref='venue')
 
     # TODO: implement any missing fields, as a database migration using Flask-Migrate
 
@@ -59,6 +61,7 @@ class Artist(db.Model):
     image_link = db.Column(db.String(500))
     facebook_link = db.Column(db.String(120))
 
+    shows = db.relationship('Show', backref='artist')
     # TODO: implement any missing fields, as a database migration using Flask-Migrate
 
 
@@ -66,9 +69,17 @@ class Show(db.Model):
     __tablename__ = 'Show'
 
     id = db.Column(db.Integer, primary_key=True)
-    # todo, reference the artist
-    # todo, reference the venue
-    # todo, list the date/time of the performance
+    start_time = db.Column(db.DateTime, nullable=False)
+    artist_id = db.Column(
+        db.Integer,
+        db.ForeignKey('Artist.id'),
+        nullable=False
+    )
+    venue_id = db.Column(
+        db.Integer,
+        db.ForeignKey('Venue.id'),
+        nullable=False
+    )
 
 # TODO Implement Show and Artist models, and complete all model relationships and properties, as a database migration.
 
