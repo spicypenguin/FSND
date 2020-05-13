@@ -48,6 +48,9 @@ class Venue(db.Model):
 
     shows = db.relationship('Show', backref='venue')
 
+    def __repr__(self):
+        return f'<Venue {self.id} {self.name}>'
+
 
 class Artist(db.Model):
     __tablename__ = 'Artist'
@@ -112,41 +115,25 @@ def index():
 
 @app.route('/venues')
 def venues():
-    # TODO: replace with real venues data.
-    #       num_shows should be aggregated based on number of upcoming shows per venue.
-    data = [{
-        "city": "San Francisco",
-        "state": "CA",
-        "venues": [{
-            "id": 1,
-            "name": "The Musical Hop",
-            "num_upcoming_shows": 0,
-        }, {
-            "id": 3,
-            "name": "Park Square Live Music & Coffee",
-            "num_upcoming_shows": 1,
-        }]
-    }, {
-        "city": "New York",
-        "state": "NY",
-        "venues": [{
-            "id": 2,
-            "name": "The Dueling Pianos Bar",
-            "num_upcoming_shows": 0,
-        }]
-    }]
+    data = []
 
-    # TODO: How do I get a list of city/state pairs that have venues?
-    # TODO: How do I massage the output of the city/state pairs to match the original format?
-    # data = [{
-    #     "city": "San Francisco",
-    #     "state": "CA",
-    #     "venues": Venue.query.filter(Venue.city == 'San Francisco' and Venue.state == 'CA').all()
-    # }, {
-    #     "city": "New York",
-    #     "state": "NY",
-    #     "venues": Venue.query.filter(Venue.city == '"New York' and Venue.state == 'NY').all()
-    # }]
+    city_states = db.session.query(Venue.city, Venue.state).distinct().all()
+    for city_state_pair in city_states:
+        matching_venues = Venue.query.filter(
+            Venue.city == city_state_pair[0] and Venue.state == city_state_pair[1]
+        ).all()
+
+        city_data = {
+            'city': city_state_pair[0],
+            'state': city_state_pair[1],
+            'venues': [{
+                'id': x.id,
+                'name': x.name,
+                'num_upcoming_shows': len(x.shows)
+            } for x in matching_venues]
+        }
+        data.append(city_data)
+
     return render_template('pages/venues.html', areas=data)
 
 
@@ -155,8 +142,9 @@ def search_venues():
     # Search on artists with partial string search. Ensure it is case-insensitive.
     # seach for Hop should return "The Musical Hop".
     # search for "Music" should return "The Musical Hop" and "Park Square Live Music & Coffee"
-    matches = Venue.query.filter(Venue.name.ilike(
-        request.form.get('search_term', ''))).all()
+    search_term = request.form.get('search_term', '')
+    matches = Venue.query.filter(Venue.name.ilike(f'%{search_term}%')).all()
+
     response = {
         "count": len(matches),
         "data": [{
@@ -165,6 +153,7 @@ def search_venues():
             "num_upcoming_shows": len(x.shows)
         } for x in matches]
     }
+
     return render_template(
         'pages/search_venues.html',
         results=response,
