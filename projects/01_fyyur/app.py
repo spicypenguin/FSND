@@ -40,13 +40,13 @@ class Venue(db.Model):
     phone = db.Column(db.String(120))
     image_link = db.Column(db.String(500))
     facebook_link = db.Column(db.String(120))
-    website_link = db.Column(db.String(120))
+
+    website = db.Column(db.String(120))
     genres = db.Column(db.ARRAY(db.String(50)))
-    # TODO: currently seeking talent
+    seeking_talent = db.Column(db.Boolean)
+    seeking_description = db.Column(db.String(500))
 
     shows = db.relationship('Show', backref='venue')
-
-    # TODO: implement any missing fields, as a database migration using Flask-Migrate
 
 
 class Artist(db.Model):
@@ -80,8 +80,6 @@ class Show(db.Model):
         db.ForeignKey('Venue.id'),
         nullable=False
     )
-
-# TODO Implement Show and Artist models, and complete all model relationships and properties, as a database migration.
 
 #----------------------------------------------------------------------------#
 # Filters.
@@ -164,7 +162,7 @@ def search_venues():
         "data": [{
             "id": x.id,
             "name": x.name,
-            "num_upcoming_shows": 0
+            "num_upcoming_shows": len(x.shows)
         } for x in matches]
     }
     return render_template(
