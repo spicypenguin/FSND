@@ -3,6 +3,10 @@
 {% block content %}
 <div class="form-wrapper">
   <form method="post" class="form">
+
+    <!-- this line was adeed to fix {'csrf_token': ['The CSRF token is missing.']}-->
+    {{ form.hidden_tag() }}
+
     <h3 class="form-heading">List a new artist</h3>
     <div class="form-group">
       <label for="name">Name</label>
@@ -32,7 +36,7 @@
       <label for="genres">Facebook Link</label>
       {{ form.facebook_link(class_ = 'form-control', placeholder='http://', autofocus = true) }}
     </div>
-    <input type="submit" value="Create Venue" class="btn btn-primary btn-lg btn-block">
+    <input type="submit" value="Create Artist" class="btn btn-primary btn-lg btn-block">
   </form>
 </div>
 {% endblock %}
