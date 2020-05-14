@@ -245,14 +245,32 @@ def create_venue_form():
 
 @app.route('/venues/create', methods=['POST'])
 def create_venue_submission():
-    # TODO: CREATE VENUE SUBMIT insert form data as a new Venue record in the db, instead
-    # TODO: CREATE VENUE SUBMIT modify data to be the data object returned from db insertion
+    name = request.form['name']
 
-    # on successful db insert, flash success
-    flash('Venue ' + request.form['name'] + ' was successfully listed!')
-    # TODO: CREATE VENUE SUBMIT on unsuccessful db insert, flash an error instead.
-    # e.g., flash('An error occurred. Venue ' + data.name + ' could not be listed.')
-    # see: http://flask.pocoo.org/docs/1.0/patterns/flashing/
+    try:
+        venue = Venue(
+            name=name,
+            city=request.form['city'],
+            state=request.form['state'],
+            address=request.form['address'],
+            phone=request.form['phone'],
+            genres=request.form.getlist('genres'),
+            facebook_link=request.form['facebook_link']
+        )
+        db.session.add(venue)
+        db.session.commit()
+
+        # on successful db insert, flash success
+        flash(f'Venue {name} was successfully listed!')
+    except:
+        db.session.rollback()
+
+        # on failed db insert, flash error
+        logging.exception(f'Unable to create venue {name}')
+        flash(f'An error occured. Venue {name} could not be listed.')
+    finally:
+        db.session.close()
+
     return render_template('pages/home.html')
 
 
@@ -261,9 +279,10 @@ def delete_venue(venue_id):
     # TODO: DELETE VENUE Complete this endpoint for taking a venue_id, and using
     # SQLAlchemy ORM to delete a record. Handle cases where the session commit could fail.
     try:
-        pass
+        Venue.query.get(venue_id).delete()
+        db.session.commit()
     except:
-        pass
+        db.session.rollback()
     finally:
         db.session.close()
 
@@ -413,13 +432,32 @@ def create_artist_form():
 @app.route('/artists/create', methods=['POST'])
 def create_artist_submission():
     # called upon submitting the new artist listing form
-    # TODO: CREATE ARTIST SUBMIT insert form data as a new Venue record in the db, instead
-    # TODO: CREATE ARTIST SUBMIT modify data to be the data object returned from db insertion
+    name = request.form['name']
+    try:
+        artist = Artist(
+            name=name,
+            city=request.form['city'],
+            state=request.form['state'],
+            phone=request.form['phone'],
+            genres=request.form.getlist('genres'),
+            facebook_link=request.form['facebook_link']
+        )
 
-    # on successful db insert, flash success
-    flash('Artist ' + request.form['name'] + ' was successfully listed!')
-    # TODO: CREATE ARTIST SUBMIT on unsuccessful db insert, flash an error instead.
-    # e.g., flash('An error occurred. Artist ' + data.name + ' could not be listed.')
+        db.session.add(artist)
+        db.session.commit()
+
+        # on successful db insert, flash success
+        flash(f'Artist {artist.name} was successfully listed!')
+    except Exception:
+        db.session.rollback()
+
+        logging.exception(f'Unable to create artist {name}')
+
+        # on failure, flash error
+        flash(f'Artist {name} could not be listed.', 'error')
+    finally:
+        db.session.close()
+
     return render_template('pages/home.html')
 
 
