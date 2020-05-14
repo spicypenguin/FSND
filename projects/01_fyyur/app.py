@@ -245,6 +245,8 @@ def create_venue_form():
 
 @app.route('/venues/create', methods=['POST'])
 def create_venue_submission():
+    form = VenueForm()
+
     name = request.form['name']
 
     try:
@@ -432,31 +434,42 @@ def create_artist_form():
 @app.route('/artists/create', methods=['POST'])
 def create_artist_submission():
     # called upon submitting the new artist listing form
-    name = request.form['name']
-    try:
+    form = ArtistForm(request.form)
+
+    validation_success = form.validate()
+    if validation_success:
+        name = form.name.data
+        print(form.genres.data)
         artist = Artist(
             name=name,
-            city=request.form['city'],
-            state=request.form['state'],
-            phone=request.form['phone'],
-            genres=request.form.getlist('genres'),
-            facebook_link=request.form['facebook_link']
+            city=form.city.data,
+            state=form.state.data,
+            phone=form.phone.data,
+            genres=form.genres.data,
+            facebook_link=form.facebook_link.data
         )
 
-        db.session.add(artist)
-        db.session.commit()
+        try:
+            db.session.add(artist)
+            db.session.commit()
 
-        # on successful db insert, flash success
-        flash(f'Artist {artist.name} was successfully listed!')
-    except Exception:
-        db.session.rollback()
+            # on successful db insert, flash success
+            flash(f'Artist {artist.name} was successfully listed!')
+        except Exception:
+            db.session.rollback()
 
-        logging.exception(f'Unable to create artist {name}')
+            logging.exception(f'Unable to create artist {name}')
+
+            # on failure, flash error
+            flash(f'Artist {name} could not be listed.', 'error')
+        finally:
+            db.session.close()
+    else:
+        logging.exception(f'Validation error')
+        print(form.errors)
 
         # on failure, flash error
-        flash(f'Artist {name} could not be listed.', 'error')
-    finally:
-        db.session.close()
+        flash(f'Artist could not be listed.', 'error')
 
     return render_template('pages/home.html')
 
