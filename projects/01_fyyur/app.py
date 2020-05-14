@@ -102,6 +102,31 @@ def format_datetime(value, format='medium'):
     return babel.dates.format_datetime(date, format)
 
 
+#----------------------------------------------------------------------------#
+# Helper functions.
+#----------------------------------------------------------------------------#
+
+def get_past_or_future_shows(shows, is_future):
+    if is_future:
+        return_shows = [
+            show for show in shows if date_is_in_future(show.start_time)
+        ]
+    else:
+        return_shows = [
+            show for show in shows if not date_is_in_future(show.start_time)
+        ]
+
+    return return_shows
+
+
+def date_is_in_future(date):
+    return date > datetime.utcnow()
+
+
+def convert_datetime_to_string(datetime_obj):
+    return datetime.strftime(datetime_obj, '%Y-%m-%dT%H:%M:%S.%fZ')
+
+
 app.jinja_env.filters['datetime'] = format_datetime
 
 #----------------------------------------------------------------------------#
@@ -169,10 +194,42 @@ def search_venues():
 def show_venue(venue_id):
     # shows the venue page with the given venue_id
 
-    data = Venue.query.get(venue_id)
+    venue = Venue.query.get(venue_id)
 
-    if not data:
+    if not venue:
         return abort(404)
+
+    future_shows = get_past_or_future_shows(venue.shows, is_future=True)
+    past_shows = get_past_or_future_shows(venue.shows, is_future=False)
+
+    data = {
+        "id": venue.id,
+        "name": venue.name,
+        "genres": venue.genres,
+        "address": venue.address,
+        "city": venue.city,
+        "state": venue.state,
+        "phone": venue.phone,
+        "website": venue.website,
+        "facebook_link": venue.facebook_link,
+        "seeking_talent": venue.seeking_talent,
+        "seeking_description": venue.seeking_description,
+        "image_link": venue.image_link,
+        "past_shows": [{
+            "artist_id": x.artist_id,
+            "artist_name": x.artist.name,
+            "artist_image_link": x.artist.image_link,
+            "start_time": convert_datetime_to_string(x.start_time)
+        } for x in past_shows],
+        "upcoming_shows": [{
+            "artist_id": x.artist_id,
+            "artist_name": x.artist.name,
+            "artist_image_link": x.artist.image_link,
+            "start_time": convert_datetime_to_string(x.start_time)
+        } for x in future_shows],
+        "past_shows_count": len(past_shows),
+        "upcoming_shows_count": len(future_shows),
+    }
 
     return render_template('pages/show_venue.html', venue=data)
 
@@ -188,12 +245,12 @@ def create_venue_form():
 
 @app.route('/venues/create', methods=['POST'])
 def create_venue_submission():
-    # TODO: insert form data as a new Venue record in the db, instead
-    # TODO: modify data to be the data object returned from db insertion
+    # TODO: CREATE VENUE SUBMIT insert form data as a new Venue record in the db, instead
+    # TODO: CREATE VENUE SUBMIT modify data to be the data object returned from db insertion
 
     # on successful db insert, flash success
     flash('Venue ' + request.form['name'] + ' was successfully listed!')
-    # TODO: on unsuccessful db insert, flash an error instead.
+    # TODO: CREATE VENUE SUBMIT on unsuccessful db insert, flash an error instead.
     # e.g., flash('An error occurred. Venue ' + data.name + ' could not be listed.')
     # see: http://flask.pocoo.org/docs/1.0/patterns/flashing/
     return render_template('pages/home.html')
@@ -201,12 +258,18 @@ def create_venue_submission():
 
 @app.route('/venues/<venue_id>', methods=['DELETE'])
 def delete_venue(venue_id):
-    # TODO: Complete this endpoint for taking a venue_id, and using
+    # TODO: DELETE VENUE Complete this endpoint for taking a venue_id, and using
     # SQLAlchemy ORM to delete a record. Handle cases where the session commit could fail.
+    try:
+        pass
+    except:
+        pass
+    finally:
+        db.session.close()
 
     # BONUS CHALLENGE: Implement a button to delete a Venue on a Venue Page, have it so that
     # clicking that button delete it from the db then redirect the user to the homepage
-    return None
+    return redirect(url_for('index'))
 
 #  Artists
 #  ----------------------------------------------------------------
@@ -243,20 +306,40 @@ def search_artists():
 @app.route('/artists/<int:artist_id>')
 def show_artist(artist_id):
     # shows the venue page with the given venue_id
-    data = Artist.query.get(artist_id)
-    if not data:
+    artist = Artist.query.get(artist_id)
+    if not artist:
         return abort(404)
 
-    # TODO: add in show data
-    # "past_shows": [{
-    #         "venue_id": 3,
-    #         "venue_name": "Park Square Live Music & Coffee",
-    #         "venue_image_link": "https://images.unsplash.com/photo-1485686531765-ba63b07845a7?ixlib=rb-1.2.1&ixid=eyJhcHBfaWQiOjEyMDd9&auto=format&fit=crop&w=747&q=80",
-    #         "start_time": "2019-06-15T23:00:00.000Z"
-    #     }],
-    #     "upcoming_shows": [],
-    #     "past_shows_count": 1,
-    #     "upcoming_shows_count": 0,
+    future_shows = get_past_or_future_shows(artist.shows, is_future=True)
+    past_shows = get_past_or_future_shows(artist.shows, is_future=False)
+
+    data = {
+        "id": artist.id,
+        "name": artist.name,
+        "genres": artist.genres,
+        "city": artist.city,
+        "state": artist.state,
+        "phone": artist.phone,
+        "website": artist.website,
+        "facebook_link": artist.facebook_link,
+        "seeking_venue": artist.seeking_venue,
+        "seeking_description": artist.seeking_description,
+        "image_link": artist.image_link,
+        "past_shows": [{
+            "venue_id": x.venue_id,
+            "venue_name": x.venue.name,
+            "venue_image_link": x.venue.image_link,
+            "start_time": convert_datetime_to_string(x.start_time)
+        } for x in past_shows],
+        "upcoming_shows": [{
+            "venue_id": x.venue_id,
+            "venue_name": x.venue.name,
+            "venue_image_link": x.venue.image_link,
+            "start_time": convert_datetime_to_string(x.start_time)
+        } for x in future_shows],
+        "past_shows_count": len(past_shows),
+        "upcoming_shows_count": len(future_shows),
+    }
 
     return render_template('pages/show_artist.html', artist=data)
 
@@ -278,13 +361,13 @@ def edit_artist(artist_id):
         "seeking_description": "Looking for shows to perform at in the San Francisco Bay Area!",
         "image_link": "https://images.unsplash.com/photo-1549213783-8284d0336c4f?ixlib=rb-1.2.1&ixid=eyJhcHBfaWQiOjEyMDd9&auto=format&fit=crop&w=300&q=80"
     }
-    # TODO: populate form with fields from artist with ID <artist_id>
+    # TODO: EDIT ARTIST FORM populate form with fields from artist with ID <artist_id>
     return render_template('forms/edit_artist.html', form=form, artist=artist)
 
 
 @app.route('/artists/<int:artist_id>/edit', methods=['POST'])
 def edit_artist_submission(artist_id):
-    # TODO: take values from the form submitted, and update existing
+    # TODO: EDIT ARTIST SUBMIT take values from the form submitted, and update existing
     # artist record with ID <artist_id> using the new attributes
 
     return redirect(url_for('show_artist', artist_id=artist_id))
@@ -307,13 +390,13 @@ def edit_venue(venue_id):
         "seeking_description": "We are on the lookout for a local artist to play every two weeks. Please call us.",
         "image_link": "https://images.unsplash.com/photo-1543900694-133f37abaaa5?ixlib=rb-1.2.1&ixid=eyJhcHBfaWQiOjEyMDd9&auto=format&fit=crop&w=400&q=60"
     }
-    # TODO: populate form with values from venue with ID <venue_id>
+    # TODO: EDIT VENUE FORM populate form with values from venue with ID <venue_id>
     return render_template('forms/edit_venue.html', form=form, venue=venue)
 
 
 @app.route('/venues/<int:venue_id>/edit', methods=['POST'])
 def edit_venue_submission(venue_id):
-    # TODO: take values from the form submitted, and update existing
+    # TODO: EDIT VENUE SUBMIT take values from the form submitted, and update existing
     # venue record with ID <venue_id> using the new attributes
     return redirect(url_for('show_venue', venue_id=venue_id))
 
@@ -330,12 +413,12 @@ def create_artist_form():
 @app.route('/artists/create', methods=['POST'])
 def create_artist_submission():
     # called upon submitting the new artist listing form
-    # TODO: insert form data as a new Venue record in the db, instead
-    # TODO: modify data to be the data object returned from db insertion
+    # TODO: CREATE ARTIST SUBMIT insert form data as a new Venue record in the db, instead
+    # TODO: CREATE ARTIST SUBMIT modify data to be the data object returned from db insertion
 
     # on successful db insert, flash success
     flash('Artist ' + request.form['name'] + ' was successfully listed!')
-    # TODO: on unsuccessful db insert, flash an error instead.
+    # TODO: CREATE ARTIST SUBMIT on unsuccessful db insert, flash an error instead.
     # e.g., flash('An error occurred. Artist ' + data.name + ' could not be listed.')
     return render_template('pages/home.html')
 
@@ -353,7 +436,7 @@ def shows():
         'artist_id': x.artist_id,
         'artist_name': x.artist.name,
         'artist_image_link': x.artist.image_link,
-        'start_time': datetime.strftime(x.start_time, '%Y-%m-%dT%H:%M:%S.%fZ')
+        'start_time': convert_datetime_to_string(x.start_time)
     } for x in shows]
 
     return render_template('pages/shows.html', shows=data)
@@ -369,7 +452,7 @@ def create_shows():
 @app.route('/shows/create', methods=['POST'])
 def create_show_submission():
     # called to create new shows in the db, upon submitting new show listing form
-    # TODO: insert form data as a new Show record in the db, instead
+    # TODO: CREATE SHOW SUBMIT insert form data as a new Show record in the db, instead
 
     # on successful db insert, flash success
     try:
@@ -378,10 +461,11 @@ def create_show_submission():
         flash('Show was successfully listed!')
     except:
         db.session.rollback()
+        # TODO: CREATE SHOW SUBMIT check if this will show in the UI.
         flash('An error occured. Show could not be listed.', 'error')
     finally:
         db.session.close()
-    # TODO: on unsuccessful db insert, flash an error instead.
+
     # e.g., flash('An error occurred. Show could not be listed.')
     # see: http://flask.pocoo.org/docs/1.0/patterns/flashing/
     return render_template('pages/home.html')
